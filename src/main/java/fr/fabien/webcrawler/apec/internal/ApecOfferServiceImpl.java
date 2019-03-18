@@ -64,7 +64,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 
 			String lHttpBody = callApecSite(lCritereJsonData, lHttpClient);
 			JSONObject lJsonObject = (JSONObject) lJSONParser.parse(lHttpBody);
-			List<JSONObject> lResultList = (List) lJsonObject.get("resultats");
+			List<JSONObject> lResultList = (List<JSONObject>) lJsonObject.get("resultats");
 			lTotalResultLists.addAll(lResultList);
 
 			Long lstrResultNumber = (Long) lJsonObject.get("totalCount");
@@ -82,10 +82,10 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 			lOffers = lTotalResultLists.parallelStream()
 					.map(lIdOffer -> collectDetailOffer(lMapper, lHttpClient, lIdOffer)).collect(Collectors.toList());
 
-		} catch (IOException | ParseException | InterruptedException le) {
+		} catch (IOException | ParseException | InterruptedException lException) {
 			Thread.currentThread().interrupt();
 
-			logger.error("erreur", le);
+			logger.error("erreur", lException);
 			return lOffers;
 		}
 		return lOffers;
@@ -101,7 +101,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		try {
 			lHttpBody = callApecSite(updateCritere(lMapper, lCritereJsonData, n), lHttpClient);
 			lJsonObject = (JSONObject) lJSONParser.parse(lHttpBody);
-			lAcpecResultList = ((List) lJsonObject.get("resultats"));
+			lAcpecResultList = ((List<JSONObject>) lJsonObject.get("resultats"));
 			if (lAcpecResultList != null) {
 				lTotalResultLists.addAll(lAcpecResultList);
 			}
@@ -182,19 +182,18 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		return lHttpRequest;
 	}
 
-	private String updateCritere(ObjectMapper lMapper, String lCritereJsonData, double n) throws IOException {
+	private String updateCritere(ObjectMapper lMapper, String lCritereJsonData, double page) throws IOException {
 		Critere lCritere = lMapper.readValue(lCritereJsonData, Critere.class);
 		int index = Integer.parseInt(lCritere.getPagination().getStartIndex());
-		lCritere.getPagination().setStartIndex(Integer.toString((int) (index + 20 * n)));
+		lCritere.getPagination().setStartIndex(Integer.toString((int) (index + 20 * page)));
 		lCritereJsonData = lMapper.writeValueAsString(lCritere);
 		return lCritereJsonData;
 	}
 
 	private String readJsonApecFile(JSONParser parser, String keyword, ObjectMapper lMapper)
 			throws IOException, ParseException {
-		Object object = parser.parse(new FileReader("src/main/resources/flux_apec.json"));
-		JSONObject jsonObject = (JSONObject) object;
-
+		JSONObject jsonObject = (JSONObject) parser.parse(new FileReader("src/main/resources/flux_apec.json"));
+ 
 		if (StringUtils.isNotEmpty(keyword)) {
 			Critere lCritere = lMapper.readValue(jsonObject.toJSONString(), Critere.class);
 			lCritere.setMotsCles(keyword);
