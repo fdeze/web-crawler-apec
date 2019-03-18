@@ -1,0 +1,24 @@
+{
+    "activeFiltre": true,
+    "motsCles": "java",
+    "fonctions": [
+        101833
+    ],
+    "lieux": [69],
+    "pointGeolocDeReference": {},
+    "secteursActivite": [],
+    "typesContrat": [],
+    "typesConvention": [],
+    "niveauxExperience": [],
+    "sorts": [
+        {
+            "type": "DATE",
+            "direction": "DESCENDING"
+        }
+    ],
+    "pagination": {
+        "startIndex": 0,
+        "range": 20
+    },
+    "typeClient": "CADRE"
+}
