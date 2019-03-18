@@ -1,9 +1,8 @@
 {
     "activeFiltre": true,
-    "motsCles": "java",
+    "motsCles": "",
     "fonctions": [
-        101833
-    ],
+     ],
     "lieux": [69],
     "pointGeolocDeReference": {},
     "secteursActivite": [],
