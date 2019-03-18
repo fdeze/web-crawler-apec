@@ -6,5 +6,5 @@ import fr.fabien.webcrawler.common.model.ApecOfferVo;
 
 public interface ApecOfferService {
 
-	public List<ApecOfferVo> execute(String keyword);
+	public List<ApecOfferVo> getOffers(String keyword);
 }

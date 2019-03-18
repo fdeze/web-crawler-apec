@@ -51,7 +51,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 	 */
 	private static String WEB_OFFER_URL = "https://cadres.apec.fr/home/mes-offres/recherche-des-offres-demploi/liste-des-offres-demploi/detail-de-loffre-demploi.html?numIdOffre=";
 
-	public List<ApecOfferVo> execute(String keyword) {
+	public List<ApecOfferVo> getOffers(String keyword) {
 		List<ApecOfferVo> lOffers = new ArrayList<>();
 		List<JSONObject> lTotalResultLists = new ArrayList<>();
 
