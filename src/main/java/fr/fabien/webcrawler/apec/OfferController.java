@@ -27,9 +27,10 @@ public class OfferController implements HealthIndicator {
 	@GetMapping(path = "/getOffers/apec/{keyword}", produces = { "application/json" })
 	public List<ApecOfferVo> getOffers(@PathVariable String keyword) {
 		logger.info("Reception requête vers apec-microservice - getOffers - mot clé : {}", keyword);
+		List<ApecOfferVo> lOfferList = apecProxy.getOffers(keyword);
+		logger.info("Reception requête vers apec-microservice - getOffers - nombre résultats : {}", lOfferList.size());
 
-		return apecProxy.getOffers(keyword);
-
+		return lOfferList;
 	}
 
 	@Override
