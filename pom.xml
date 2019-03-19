@@ -8,13 +8,10 @@
 		<artifactId>web-crawler-starter-parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>web-crawler-apec</artifactId>
-	<name>web-crawler</name>
+	<artifactId>web-crawler-connector-apec</artifactId>
+	<name>web-crawler-connector-apec</name>
 
 
-	<properties>
-		<docker.image.prefix>web-crawler</docker.image.prefix>
-	</properties>
 
 	<dependencies>
 		<dependency>
