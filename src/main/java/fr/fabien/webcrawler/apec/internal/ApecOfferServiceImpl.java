@@ -51,6 +51,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 	 */
 	private static String WEB_OFFER_URL = "https://cadres.apec.fr/home/mes-offres/recherche-des-offres-demploi/liste-des-offres-demploi/detail-de-loffre-demploi.html?numIdOffre=";
 
+	@SuppressWarnings("unchecked")
 	public List<ApecOfferVo> getOffers(String keyword) {
 		List<ApecOfferVo> lOffers = new ArrayList<>();
 		List<JSONObject> lTotalResultLists = new ArrayList<>();
@@ -91,6 +92,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		return lOffers;
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<JSONObject> fetchApecResultsByPage(ObjectMapper lMapper, JSONParser lJSONParser,
 			String lCritereJsonData, HttpClient lHttpClient, double n) {
 		List<JSONObject> lTotalResultLists = new ArrayList<>();
