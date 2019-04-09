@@ -29,7 +29,6 @@ import fr.fabien.webcrawler.apec.internal.input.Critere;
 import fr.fabien.webcrawler.apec.internal.output.AdresseOffre;
 import fr.fabien.webcrawler.apec.internal.output.ApecOffer;
 import fr.fabien.webcrawler.common.Constants;
-import fr.fabien.webcrawler.common.model.ApecOfferVo;
 
 @Service
 public class ApecOfferServiceImpl implements ApecOfferService {

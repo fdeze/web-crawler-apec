@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import fr.fabien.webcrawler.apec.internal.ApecOfferService;
-import fr.fabien.webcrawler.common.model.ApecOfferVo;
+import fr.fabien.webcrawler.apec.internal.ApecOfferVo;
 
 @EnableDiscoveryClient
 @RestController
