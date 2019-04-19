@@ -1,4 +1,4 @@
-package fr.fabien.webcrawler.apec;
+package fr.fabien.webcrawler;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

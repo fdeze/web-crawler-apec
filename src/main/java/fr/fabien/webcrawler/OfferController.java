@@ -1,4 +1,4 @@
-package fr.fabien.webcrawler.apec;
+package fr.fabien.webcrawler;
 
 import java.util.List;
 
