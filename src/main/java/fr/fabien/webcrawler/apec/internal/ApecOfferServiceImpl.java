@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fr.fabien.contracts.apec.ApecOfferVo;
 import fr.fabien.webcrawler.apec.internal.input.Critere;
 import fr.fabien.webcrawler.apec.internal.output.AdresseOffre;
 import fr.fabien.webcrawler.apec.internal.output.ApecOffer;
@@ -144,9 +145,9 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		lOfferVo.setSalaire(lApecOffer.getSalaireTexte());
 		lOfferVo.setUrl(WEB_OFFER_URL + lApecOffer.getNumeroOffre());
 
-		lOfferVo.setTexteEntreprise(lApecOffer.getTexteHtmlEntreprise());
-		lOfferVo.setTexteHtml(lApecOffer.getTexteHtml());
-		lOfferVo.setTexteProfil(lApecOffer.getTexteHtmlProfil());
+		lOfferVo.setDescriptionEntreprise(lApecOffer.getTexteHtmlEntreprise());
+		lOfferVo.setDescriptionOffre(lApecOffer.getTexteHtml());
+		lOfferVo.setDescriptionProfil(lApecOffer.getTexteHtmlProfil());
 		if (null != lApecOffer.getLogoEtablissement()) {
 			lOfferVo.setUrlLogo("https://cadres.apec.fr/files/live/mounts/images" + lApecOffer.getLogoEtablissement());
 		}

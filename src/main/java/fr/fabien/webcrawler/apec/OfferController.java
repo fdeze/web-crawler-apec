@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import fr.fabien.contracts.OfferVo;
+import fr.fabien.contracts.apec.ApecOfferVo;
 import fr.fabien.webcrawler.apec.internal.ApecOfferService;
-import fr.fabien.webcrawler.apec.internal.ApecOfferVo;
+import fr.fabien.webcrawler.apec.mongodb.proxy.MongodbOfferProxy;
 
 @EnableDiscoveryClient
 @RestController
@@ -24,11 +26,34 @@ public class OfferController implements HealthIndicator {
 	@Autowired
 	private ApecOfferService apecProxy;
 
+	@Autowired
+	private MongodbOfferProxy mongodbProxy;
+
+	@GetMapping(path = "/getOffers/apec/", produces = { "application/json" })
+	public List<ApecOfferVo> getOffers() {
+		return getOffersWithKeyword("java");
+	}
+	
 	@GetMapping(path = "/getOffers/apec/{keyword}", produces = { "application/json" })
-	public List<ApecOfferVo> getOffers(@PathVariable String keyword) {
-		logger.info("Reception requête vers apec-microservice - getOffers - mot clé : {}", keyword);
+	public List<ApecOfferVo> getOffersWithKeyword(@PathVariable String keyword) {
+		logger.info("Reception requête vers apec-microservice - getOffersWithKeyword - mot clé : {}", keyword);
 		List<ApecOfferVo> lOfferList = apecProxy.getOffers(keyword);
-		logger.info("Reception requête vers apec-microservice - getOffers - nombre résultats : {}", lOfferList.size());
+		logger.info("Reception requête vers apec-microservice - getOffersWithKeyword - nombre résultats : {}", lOfferList.size());
+
+		try {
+			OfferVo offer;
+			for (ApecOfferVo apecOfferVo : lOfferList) {
+				offer = new OfferVo();
+				offer.setDatePublication(apecOfferVo.getDatePublication());
+				offer.setNumeroOffreExterne(apecOfferVo.getNumeroOffreExterne());
+				offer.setTitre(apecOfferVo.getTitre());
+				offer.setUrl(apecOfferVo.getUrl());
+				logger.info("insertOffer:" + mongodbProxy.insertOffer(offer));
+			}
+
+		} catch (Exception e) {
+			logger.error("erreur", e);
+		}
 
 		return lOfferList;
 	}
