@@ -16,9 +16,11 @@ import fr.fabien.contracts.OfferVo;
 import fr.fabien.contracts.apec.ApecOfferVo;
 import fr.fabien.webcrawler.apec.internal.ApecOfferService;
 import fr.fabien.webcrawler.apec.mongodb.proxy.MongodbOfferProxy;
+import io.swagger.annotations.Api;
 
 @EnableDiscoveryClient
 @RestController
+@Api("")
 public class OfferController implements HealthIndicator {
 
 	private Logger logger = LoggerFactory.getLogger(OfferController.class);
