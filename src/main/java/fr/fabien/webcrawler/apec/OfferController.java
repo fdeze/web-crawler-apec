@@ -50,11 +50,11 @@ public class OfferController implements HealthIndicator {
 				offer.setNumeroOffreExterne(apecOfferVo.getNumeroOffreExterne());
 				offer.setTitre(apecOfferVo.getTitre());
 				offer.setUrl(apecOfferVo.getUrl());
-				logger.info("insertOffer:" + mongodbProxy.insertOffer(offer));
+				//logger.info("insertOffer:" + mongodbProxy.insertOffer(offer));
 			}
 
 		} catch (Exception e) {
-			logger.error("erreur", e);
+			logger.error("getOffersWithKeyword - erreur", e);
 		}
 
 		return lOfferList;
