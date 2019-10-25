@@ -6,5 +6,5 @@ import fr.fabien.contracts.apec.ApecOfferVo;
 
 public interface ApecOfferService {
 
-	public List<ApecOfferVo> getOffers(String keyword);
+	public List<ApecOfferVo> getOffers(String location, String keyword);
 }

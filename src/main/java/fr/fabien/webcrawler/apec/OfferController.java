@@ -35,29 +35,43 @@ public class OfferController implements HealthIndicator {
 	public List<ApecOfferVo> getOffers() {
 		return getOffersWithKeyword("java");
 	}
-	
+
 	@GetMapping(path = "/getOffers/apec/{keyword}", produces = { "application/json" })
 	public List<ApecOfferVo> getOffersWithKeyword(@PathVariable String keyword) {
-		logger.info("Reception requête vers apec-microservice - getOffersWithKeyword - mot clé : {}", keyword);
-		List<ApecOfferVo> lOfferList = apecProxy.getOffers(keyword);
-		logger.info("Reception requête vers apec-microservice - getOffersWithKeyword - nombre résultats : {}", lOfferList.size());
+		return getOffersWithLocationAndKeyword("69", keyword);
+	}
+
+	@GetMapping(path = "/getOffers/apec/{location}/{keyword}", produces = { "application/json" })
+	public List<ApecOfferVo> getOffersWithLocationAndKeyword(@PathVariable String location,
+			@PathVariable String keyword) {
+		logger.info(
+				"Reception requête vers apec-microservice - getOffersWithLocationAndKeyword - localisation : {} -  mot clé : {}",
+				location, keyword);
+		List<ApecOfferVo> lOfferList = apecProxy.getOffers(location, keyword);
+		logger.info(
+				"Reception requête vers apec-microservice - getOffersWithLocationAndKeyword - nombre résultats : {}",
+				lOfferList.size());
 
 		try {
-			OfferVo offer;
-			for (ApecOfferVo apecOfferVo : lOfferList) {
-				offer = new OfferVo();
-				offer.setDatePublication(apecOfferVo.getDatePublication());
-				offer.setNumeroOffreExterne(apecOfferVo.getNumeroOffreExterne());
-				offer.setTitre(apecOfferVo.getTitre());
-				offer.setUrl(apecOfferVo.getUrl());
-				//logger.info("insertOffer:" + mongodbProxy.insertOffer(offer));
-			}
-
+			lOfferList.parallelStream().forEach(offer -> insertOffer(offer));
 		} catch (Exception e) {
 			logger.error("getOffersWithKeyword - erreur", e);
 		}
 
 		return lOfferList;
+	}
+
+	private void insertOffer(ApecOfferVo apecOfferVo) {
+		OfferVo offer;
+		offer = new OfferVo();
+		offer.setDatePublication(apecOfferVo.getDatePublication());
+		offer.setNumeroOffre(apecOfferVo.getNumeroOffre());
+		offer.setNumeroOffreExterne(apecOfferVo.getNumeroOffreExterne());
+		offer.setTitre(apecOfferVo.getTitre());
+		offer.setUrl(apecOfferVo.getUrl());
+		offer.setDescriptionOffre(apecOfferVo.getDescriptionOffre());
+		offer.setEntreprise(apecOfferVo.getEntreprise());
+		logger.info("insertOffer {}", mongodbProxy.insertOffer(offer));
 	}
 
 	@Override

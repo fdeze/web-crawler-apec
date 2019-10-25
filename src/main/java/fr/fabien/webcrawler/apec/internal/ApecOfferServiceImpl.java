@@ -52,14 +52,14 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 	private static String WEB_OFFER_URL = "https://cadres.apec.fr/home/mes-offres/recherche-des-offres-demploi/liste-des-offres-demploi/detail-de-loffre-demploi.html?numIdOffre=";
 
 	@SuppressWarnings("unchecked")
-	public List<ApecOfferVo> getOffers(String keyword) {
+	public List<ApecOfferVo> getOffers(String location, String keyword) {
 		List<ApecOfferVo> lOffers = new ArrayList<>();
 		List<JSONObject> lTotalResultLists = new ArrayList<>();
 
 		try {
 			ObjectMapper lMapper = new ObjectMapper();
 			JSONParser lJSONParser = new JSONParser();
-			String lCritereJsonData = readJsonApecFile(lJSONParser, keyword, lMapper);
+			String lCritereJsonData = readJsonApecFile(lJSONParser, location, keyword, lMapper);
 
 			HttpClient lHttpClient = HttpClient.newBuilder().version(Version.HTTP_2).build();
 
@@ -192,17 +192,20 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		return lCritereJsonData;
 	}
 
-	private String readJsonApecFile(JSONParser parser, String keyword, ObjectMapper lMapper)
+	private String readJsonApecFile(JSONParser parser, String location, String keyword, ObjectMapper lMapper)
 			throws IOException, ParseException {
 		JSONObject jsonObject = (JSONObject) parser.parse(new FileReader("src/main/resources/flux_apec.json"));
- 
-		if (StringUtils.isNotEmpty(keyword)) {
-			Critere lCritere = lMapper.readValue(jsonObject.toJSONString(), Critere.class);
-			lCritere.setMotsCles(keyword);
-			return lMapper.writeValueAsString(lCritere);
-		}
+		Critere lCritere = lMapper.readValue(jsonObject.toJSONString(), Critere.class);
 
-		return jsonObject.toJSONString();
+		if (StringUtils.isNotEmpty(location)) {
+			String locationArray[] = { location };
+			lCritere.setLieux(locationArray);
+		}
+		if (StringUtils.isNotEmpty(keyword)) {
+			lCritere.setMotsCles(keyword);
+		}
+		return lMapper.writeValueAsString(lCritere);
+
 	}
 
 }
