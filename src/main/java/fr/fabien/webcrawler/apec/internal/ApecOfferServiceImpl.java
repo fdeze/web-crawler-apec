@@ -39,13 +39,13 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 	/**
 	 * Endpoint de recherche d'offres d'emploi apec
 	 */
-	private static String searchOfferUrl = "https://cadres.apec.fr/cms/webservices/rechercheOffre/ids";
-
+	//private static String searchOfferUrl = "https://cadres.apec.fr/cms/webservices/rechercheOffre/ids";
+	private static String searchOfferUrl = "https://www.apec.fr/cms/webservices/rechercheOffre";
 	/**
 	 * Endpoint d'obtention du détail d'une offre d'emploi
 	 */
-	private static String GET_OFFER_DETAILS_URL = "https://cadres.apec.fr/cms/webservices/offre/public?";
-
+	//private static String GET_OFFER_DETAILS_URL = "https://cadres.apec.fr/cms/webservices/offre/public?";
+	private static String GET_OFFER_DETAILS_URL = "https://www.apec.fr/cms/webservices/offre/public?numeroOffre=";
 	/**
 	 * URL d'une offre d'emploi sur le site internet
 	 */
@@ -116,7 +116,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 	}
 
 	private ApecOfferVo collectDetailOffer(ObjectMapper pMapper, HttpClient pHttpClient, JSONObject pJsonObject) {
-		String lIdOffer = ((String) pJsonObject.get("@uriOffre")).substring(6);
+		String lIdOffer = ((String) pJsonObject.get("numeroOffre"));
 
 		HttpRequest request = httpCall("GET", GET_OFFER_DETAILS_URL + lIdOffer, null);
 		ApecOffer lApecOffer = null;
@@ -149,7 +149,7 @@ public class ApecOfferServiceImpl implements ApecOfferService {
 		lOfferVo.setDescriptionOffre(lApecOffer.getTexteHtml());
 		lOfferVo.setDescriptionProfil(lApecOffer.getTexteHtmlProfil());
 		if (null != lApecOffer.getLogoEtablissement()) {
-			lOfferVo.setUrlLogo("https://cadres.apec.fr/files/live/mounts/images" + lApecOffer.getLogoEtablissement());
+			lOfferVo.setUrlLogo("https://www.apec.fr/files/live/mounts/images/" + lApecOffer.getLogoEtablissement());
 		}
 
 		if (null != lApecOffer.getLieux()) {
