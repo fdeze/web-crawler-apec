@@ -2,7 +2,7 @@
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Critere
+public class CritereVO
 {
 	@JsonProperty("pointGeolocDeReference")
     private Object pointGeolocDeReference;
@@ -15,7 +15,7 @@ public class Critere
 
     private String[] typesConvention;
 
-    private Pagination pagination;
+    private PaginationVO pagination;
 
     private String[] typesContrat;
 
@@ -25,7 +25,7 @@ public class Critere
 
     private String[] lieux;
 
-    private Sorts[] sorts;
+    private SortsVO[] sorts;
 
     private String[] secteursActivite;
 
@@ -81,12 +81,12 @@ public class Critere
         this.typesConvention = typesConvention;
     }
 
-    public Pagination getPagination ()
+    public PaginationVO getPagination ()
     {
         return pagination;
     }
 
-    public void setPagination (Pagination pagination)
+    public void setPagination (PaginationVO pagination)
     {
         this.pagination = pagination;
     }
@@ -131,12 +131,12 @@ public class Critere
         this.lieux = lieux;
     }
 
-    public Sorts[] getSorts ()
+    public SortsVO[] getSorts ()
     {
         return sorts;
     }
 
-    public void setSorts (Sorts[] sorts)
+    public void setSorts (SortsVO[] sorts)
     {
         this.sorts = sorts;
     }

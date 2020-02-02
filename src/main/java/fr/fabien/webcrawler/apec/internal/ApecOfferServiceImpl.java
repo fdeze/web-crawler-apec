@@ -1,20 +1,22 @@
 package fr.fabien.webcrawler.apec.internal;
 
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
-import java.net.http.HttpClient.Version;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
+import javax.ws.rs.HttpMethod;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -23,189 +25,276 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.fabien.contracts.apec.ApecOfferVo;
-import fr.fabien.webcrawler.apec.internal.input.Critere;
-import fr.fabien.webcrawler.apec.internal.output.AdresseOffre;
-import fr.fabien.webcrawler.apec.internal.output.ApecOffer;
+import fr.fabien.webcrawler.apec.configuration.ApecConstants;
+import fr.fabien.webcrawler.apec.internal.input.CritereVO;
+import fr.fabien.webcrawler.apec.internal.output.AdresseOffreVO;
+import fr.fabien.webcrawler.apec.internal.output.OffreVO;
 import fr.fabien.webcrawler.common.Constants;
 
 @Service
 public class ApecOfferServiceImpl implements ApecOfferService {
 
-	private Logger logger = LoggerFactory.getLogger(ApecOfferServiceImpl.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ApecOfferServiceImpl.class);
 
-	/**
-	 * Endpoint de recherche d'offres d'emploi apec
-	 */
-	//private static String searchOfferUrl = "https://cadres.apec.fr/cms/webservices/rechercheOffre/ids";
-	private static String searchOfferUrl = "https://www.apec.fr/cms/webservices/rechercheOffre";
-	/**
-	 * Endpoint d'obtention du détail d'une offre d'emploi
-	 */
-	//private static String GET_OFFER_DETAILS_URL = "https://cadres.apec.fr/cms/webservices/offre/public?";
-	private static String GET_OFFER_DETAILS_URL = "https://www.apec.fr/cms/webservices/offre/public?numeroOffre=";
-	/**
-	 * URL d'une offre d'emploi sur le site internet
-	 */
-	private static String WEB_OFFER_URL = "https://cadres.apec.fr/home/mes-offres/recherche-des-offres-demploi/liste-des-offres-demploi/detail-de-loffre-demploi.html?numIdOffre=";
 
+	private final HttpClient httpClient = HttpClient.newBuilder()
+	                                                .version(HttpClient.Version.HTTP_2)
+	                                                .build();
+	
+	
 	@SuppressWarnings("unchecked")
+	@Override
 	public List<ApecOfferVo> getOffers(String location, String keyword) {
-		List<ApecOfferVo> lOffers = new ArrayList<>();
-		List<JSONObject> lTotalResultLists = new ArrayList<>();
+		List<ApecOfferVo> apecOfferVoList = new ArrayList<>();
 
-		try {
-			ObjectMapper lMapper = new ObjectMapper();
-			JSONParser lJSONParser = new JSONParser();
-			String lCritereJsonData = readJsonApecFile(lJSONParser, location, keyword, lMapper);
+		try {		
+			final List<JSONObject> totalApecOfferList = new ArrayList<>();
+			final JSONParser jsonParser = new JSONParser();
+			
+			//load APEC search request data default configuration
+			final String apecSearchConfiguration = getApecSearchCriteria();
+			//update configuration with input criteria
+ 			final String searchCriteria = updateApecSearchKeywordCriteria(apecSearchConfiguration, location, keyword);
+			
+			//call APEC search API
+			final String httpCallBody = callApecSearchApi(searchCriteria);
+			final JSONObject lJsonObject = (JSONObject) jsonParser.parse(httpCallBody);
+			//get current offers found
+			final List<JSONObject> apecOfferList = (List<JSONObject>) lJsonObject.get("resultats");
+			totalApecOfferList.addAll(apecOfferList);
 
-			HttpClient lHttpClient = HttpClient.newBuilder().version(Version.HTTP_2).build();
+			//get offer total count
+			final Long offerNumber = (Long) lJsonObject.get("totalCount");
+			//get result page number
+			final double offerPageNumber = offerNumber / ApecConstants.OFFER_PER_PAGE;
 
-			String lHttpBody = callApecSite(lCritereJsonData, lHttpClient);
-			JSONObject lJsonObject = (JSONObject) lJSONParser.parse(lHttpBody);
-			List<JSONObject> lResultList = (List<JSONObject>) lJsonObject.get("resultats");
-			lTotalResultLists.addAll(lResultList);
+			LOGGER.trace("apec offers found {}", offerNumber);
+			LOGGER.trace("page number to iterate {}", offerPageNumber);
 
-			Long lstrResultNumber = (Long) lJsonObject.get("totalCount");
-			double lResultPageNumber = lstrResultNumber / 20.0;
+			//for each result page to iterate
+			DoubleStream.iterate(1, n -> n + 1)
+			            .limit((long) offerPageNumber)
+			            .boxed()
+			            //iterate over result pages
+					    .map(page -> fetchApecResultsByPage(searchCriteria, page))
+					    .collect(Collectors.toList())
+					    .forEach(totalApecOfferList::addAll);
 
-			logger.trace("nombre resultats {}", lstrResultNumber);
-			logger.trace("nombre pages {}", lResultPageNumber);
+			//map List<JSONObject> offers result list to List<ApecOfferVo> apecOfferVoList
+			apecOfferVoList = totalApecOfferList.parallelStream()
+					                   .map(lIdOffer -> collectDetailOffer(lIdOffer))
+					                   .collect(Collectors.toList());
 
-			DoubleStream.iterate(1, n -> n + 1).limit((long) lResultPageNumber).boxed()
-					.map(page -> fetchApecResultsByPage(lMapper, lJSONParser, lCritereJsonData, lHttpClient, page))
-					.collect(Collectors.toList()).forEach(lTotalResultLists::addAll);
-
-			logger.trace("nombre résultats {}", lTotalResultLists.size());
-
-			lOffers = lTotalResultLists.parallelStream()
-					.map(lIdOffer -> collectDetailOffer(lMapper, lHttpClient, lIdOffer)).collect(Collectors.toList());
-
-		} catch (IOException | ParseException | InterruptedException lException) {
+		} catch (IOException | ParseException | InterruptedException exception) {
+			LOGGER.error("error during fetching offers", exception);
 			Thread.currentThread().interrupt();
-
-			logger.error("erreur", lException);
-			return lOffers;
 		}
-		return lOffers;
+		return apecOfferVoList;
 	}
 
+	/**
+	 * call APEC search API 
+	 * @param searchCriteria
+	 * @param pageNumber
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
-	private List<JSONObject> fetchApecResultsByPage(ObjectMapper lMapper, JSONParser lJSONParser,
-			String lCritereJsonData, HttpClient lHttpClient, double n) {
-		List<JSONObject> lTotalResultLists = new ArrayList<>();
-
-		String lHttpBody;
-		JSONObject lJsonObject;
-		List<JSONObject> lAcpecResultList;
+	private List<JSONObject> fetchApecResultsByPage(final String searchCriteria, final double pageNumber) {
+	    List<JSONObject> apecOfferList = new ArrayList<>();
+		 
+		final JSONParser jsonParser = new JSONParser();
 		try {
-			lHttpBody = callApecSite(updateCritere(lMapper, lCritereJsonData, n), lHttpClient);
-			lJsonObject = (JSONObject) lJSONParser.parse(lHttpBody);
-			lAcpecResultList = ((List<JSONObject>) lJsonObject.get("resultats"));
-			if (lAcpecResultList != null) {
-				lTotalResultLists.addAll(lAcpecResultList);
-			}
+			final String httpCallBody = callApecSearchApi(updateApecSearchPagingCriteria(searchCriteria, pageNumber));
+			final JSONObject  jsonObject = (JSONObject) jsonParser.parse(httpCallBody);
+			apecOfferList = ((List<JSONObject>) jsonObject.get("resultats"));
+			 
 		} catch (IOException | InterruptedException | ParseException e) {
-
 			Thread.currentThread().interrupt();
 		}
 
-		return lTotalResultLists;
+		return apecOfferList;
 	}
 
-	private ApecOfferVo collectDetailOffer(ObjectMapper pMapper, HttpClient pHttpClient, JSONObject pJsonObject) {
-		String lIdOffer = ((String) pJsonObject.get("numeroOffre"));
+	private ApecOfferVo collectDetailOffer(final JSONObject pJsonObject) {
+		ApecOfferVo apecOfferVo = null;
+		final String idOffer = ((String) pJsonObject.get("numeroOffre"));
 
-		HttpRequest request = httpCall("GET", GET_OFFER_DETAILS_URL + lIdOffer, null);
-		ApecOffer lApecOffer = null;
-		try {
-			HttpResponse<String> response = pHttpClient.send(request, BodyHandlers.ofString());
-			lApecOffer = pMapper.readValue(response.body(), ApecOffer.class);
-			return mapping(lApecOffer);
+		final HttpRequest request = httpCall(HttpMethod.GET,ApecConstants.GET_OFFER_DETAILS_URL + idOffer, null);
+ 		try {
+ 			final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+			
+ 			final ObjectMapper objectMapper = new ObjectMapper();
+			final OffreVO lApecOffer = objectMapper.readValue(response.body(), OffreVO.class);
+			apecOfferVo = mapping(lApecOffer);
 
 		} catch (IOException | InterruptedException e) {
-			logger.error("erreur", e);
+			LOGGER.error("error during fetching offer detail - offer id:{}", idOffer, e);
 			Thread.currentThread().interrupt();
-			return null;
 		}
+ 		
+ 		return apecOfferVo;
 
 	}
 
-	private ApecOfferVo mapping(ApecOffer lApecOffer) {
-		ApecOfferVo lOfferVo = new ApecOfferVo();
 
-		lOfferVo.setNumeroOffreExterne("APEC_" + lApecOffer.getNumeroOffre());
 
-		lOfferVo.setTitre(lApecOffer.getIntitule());
-		lOfferVo.setDatePublication(lApecOffer.getDatePublication());
-		lOfferVo.setEntreprise(lApecOffer.getEnseigne());
-		lOfferVo.setNumeroOffre(lApecOffer.getNumeroOffre());
-		lOfferVo.setSalaire(lApecOffer.getSalaireTexte());
-		lOfferVo.setUrl(WEB_OFFER_URL + lApecOffer.getNumeroOffre());
-
-		lOfferVo.setDescriptionEntreprise(lApecOffer.getTexteHtmlEntreprise());
-		lOfferVo.setDescriptionOffre(lApecOffer.getTexteHtml());
-		lOfferVo.setDescriptionProfil(lApecOffer.getTexteHtmlProfil());
-		if (null != lApecOffer.getLogoEtablissement()) {
-			lOfferVo.setUrlLogo("https://www.apec.fr/files/live/mounts/images/" + lApecOffer.getLogoEtablissement());
-		}
-
-		if (null != lApecOffer.getLieux()) {
-			lOfferVo.setAdresse(
-					lApecOffer.getLieux().get(0).getLibelleLieu() + " " + lApecOffer.getLieux().get(0).getIdNomLieu());
-		}
-
-		if (null != lApecOffer.getAdresseOffre()) {
-			AdresseOffre lAdresseOffre = lApecOffer.getAdresseOffre();
-
-			lOfferVo.setAdresseSiege(lAdresseOffre.getAdresseNumeroEtVoie() + " " + lAdresseOffre.getAdresseVille());
-		}
-		return lOfferVo;
-	}
-
-	private String callApecSite(String lJsonData, HttpClient httpClient) throws IOException, InterruptedException {
-		HttpRequest request = httpCall("POST", searchOfferUrl, lJsonData);
-		HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+	/**
+	 * call Apec Search Api
+	 * @param searchCriteria search criteria
+	 * @return the API result
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	private String callApecSearchApi(final String searchCriteria) throws IOException, InterruptedException {
+		final HttpRequest request = httpCall(HttpMethod.POST, ApecConstants.SEARCH_OFFER_URL, searchCriteria);
+		final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 		return response.body();
 	}
 
-	private HttpRequest httpCall(String lVerb, String lUrl, String lJsonData) {
-		HttpRequest lHttpRequest;
-		Builder lBuilder = HttpRequest.newBuilder().uri(URI.create(lUrl)).header("User-Agent", Constants.USER_AGENT)
-				.header("Content-Type", "application/json");
-		if ("POST".equals(lVerb)) {
-			lHttpRequest = lBuilder.POST(BodyPublishers.ofString(lJsonData)).build();
+	
+	/**
+	 * make a HTTP call
+	 * @param httpVerb
+	 * @param url the URL to call
+	 * @param postData the Data to send
+	 * @return a HttpRequest object
+	 */
+	private HttpRequest httpCall(final String httpVerb,final String url, final String postData) {
+		final HttpRequest httpRequest;
+		final Builder lBuilder = HttpRequest.newBuilder()
+				                      .uri(URI.create(url))
+				                      .header(Constants.HTTP_HEADER_USER_AGENT, Constants.USER_AGENT_VALUE)
+				                      .header(Constants.HTTP_HEADER_CONTENT_TYPE, Constants.CONTENT_TYPE_VALUE);
+		
+		if (HttpMethod.POST.equals(httpVerb)) {
+			httpRequest = lBuilder.POST(BodyPublishers.ofString(postData)).build();
 		} else {
-			lHttpRequest = lBuilder.GET().build();
+			httpRequest = lBuilder.GET().build();
 		}
 
-		return lHttpRequest;
+		return httpRequest;
 	}
 
-	private String updateCritere(ObjectMapper lMapper, String lCritereJsonData, double page) throws IOException {
-		Critere lCritere = lMapper.readValue(lCritereJsonData, Critere.class);
-		int index = Integer.parseInt(lCritere.getPagination().getStartIndex());
-		lCritere.getPagination().setStartIndex(Integer.toString((int) (index + 20 * page)));
-		lCritereJsonData = lMapper.writeValueAsString(lCritere);
-		return lCritereJsonData;
+
+	/**
+	 * load APEC search API input data
+	 * @return InputStream
+	 * @throws IOException 
+	 * @throws ParseException 
+	 */
+	private String getApecSearchCriteria() throws ParseException, IOException {
+		InputStream resource = null;
+		final String errorMessage = "error during loading flux_apec.json file";
+		
+		//load flux_apec.json file
+		try {
+			resource = getClass().getResourceAsStream("/"+ ApecConstants.APEC_SEARCH_API_INPUT_DATA_FILE);
+		} catch (Exception exception) {
+			LOGGER.error(errorMessage, exception);
+		}
+
+		if (null == resource) {
+			try {
+				resource = getClass().getResourceAsStream(ApecConstants.APEC_SEARCH_API_INPUT_DATA_FILE);
+			} catch (Exception exception) {
+				LOGGER.error(errorMessage, exception);
+			}
+		}
+		
+		final JSONParser jsonParser = new JSONParser();
+		final JSONObject jsonObject = (JSONObject) jsonParser.parse(IOUtils.toString(resource));
+		final ObjectMapper objectMapper = new ObjectMapper();
+		//map jsonObject to CritereVO object
+		final CritereVO lCritere = objectMapper.readValue(jsonObject.toJSONString(), CritereVO.class);
+		
+		return objectMapper.writeValueAsString(lCritere);
+		
+
 	}
 
-	private String readJsonApecFile(JSONParser parser, String location, String keyword, ObjectMapper lMapper)
-			throws IOException, ParseException {
-		JSONObject jsonObject = (JSONObject) parser.parse(new FileReader("src/main/resources/flux_apec.json"));
-		Critere lCritere = lMapper.readValue(jsonObject.toJSONString(), Critere.class);
+	/**
+	 * update APEC search criteria
+	 * @param apecSearchConfiguration
+	 * @param location the location criteria
+	 * @param keyword the keyword criteria
+	 * @return the search criteria configuration
+	 * @throws JsonProcessingException
+	 */
+	private String updateApecSearchKeywordCriteria(final String searchCriteria, final String location, final String keyword) throws JsonProcessingException {
+		
+		final ObjectMapper objectMapper = new ObjectMapper();
+		//map jsonObject to CritereVO object
+		final CritereVO lCritere = objectMapper.readValue(searchCriteria, CritereVO.class);
 
+		//override location value
 		if (StringUtils.isNotEmpty(location)) {
 			String locationArray[] = { location };
 			lCritere.setLieux(locationArray);
 		}
+		
+		//override keyword value
 		if (StringUtils.isNotEmpty(keyword)) {
 			lCritere.setMotsCles(keyword);
 		}
-		return lMapper.writeValueAsString(lCritere);
-
+		
+		//return configuration
+		return objectMapper.writeValueAsString(lCritere);
 	}
+	
+	
+	private String updateApecSearchPagingCriteria( final String searchCriteria, final double page)
+			throws IOException {
+ 
+		final ObjectMapper objectMapper = new ObjectMapper();
+		//map jsonObject to CritereVO object
+		final CritereVO critereVO = objectMapper.readValue(searchCriteria, CritereVO.class);
+		
+		final int index = Integer.parseInt(critereVO.getPagination().getStartIndex());
+		critereVO.getPagination().setStartIndex(Integer.toString((int) (index + 20 * page)));
+		
+		//return configuration
+		return objectMapper.writeValueAsString(critereVO);
+ 	}
 
+	
+	/**
+	 * map @OffreVO object to @ApecOfferVo object
+	 * @param @OffreVO offreVO object to map
+	 * @return @ApecOfferVo object
+	 */
+	private ApecOfferVo mapping(OffreVO offreVO) {
+		final ApecOfferVo lOfferVo = new ApecOfferVo();
+
+		lOfferVo.setNumeroOffreExterne(ApecConstants.ACPEC_OFFER_CODE + offreVO.getNumeroOffre());
+
+		lOfferVo.setTitre(offreVO.getIntitule());
+		lOfferVo.setDatePublication(offreVO.getDatePublication());
+		lOfferVo.setEntreprise(offreVO.getEnseigne());
+		lOfferVo.setNumeroOffre(offreVO.getNumeroOffre());
+		lOfferVo.setSalaire(offreVO.getSalaireTexte());
+		lOfferVo.setUrl(ApecConstants.PUBLIC_OFFER_URL + offreVO.getNumeroOffre());
+
+		lOfferVo.setDescriptionEntreprise(offreVO.getTexteHtmlEntreprise());
+		lOfferVo.setDescriptionOffre(offreVO.getTexteHtml());
+		lOfferVo.setDescriptionProfil(offreVO.getTexteHtmlProfil());
+		if (null != offreVO.getLogoEtablissement()) {
+			lOfferVo.setUrlLogo(ApecConstants.APEC_IMAGE_URL + offreVO.getLogoEtablissement());
+		}
+
+		if (null != offreVO.getLieux()) {
+			lOfferVo.setAdresse(
+					offreVO.getLieux().get(0).getLibelleLieu() + " " + offreVO.getLieux().get(0).getIdNomLieu());
+		}
+
+		if (null != offreVO.getAdresseOffre()) {
+			final AdresseOffreVO lAdresseOffre = offreVO.getAdresseOffre();
+			lOfferVo.setAdresseSiege(lAdresseOffre.getAdresseNumeroEtVoie() + " " + lAdresseOffre.getAdresseVille());
+		}
+		return lOfferVo;
+	}
+	
 }

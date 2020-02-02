@@ -1,6 +1,6 @@
 package fr.fabien.webcrawler.apec.internal.input;
                
-public class Pagination
+public class PaginationVO
 {
     private String startIndex;
 

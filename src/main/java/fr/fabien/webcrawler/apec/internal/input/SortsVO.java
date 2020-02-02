@@ -1,6 +1,6 @@
 package fr.fabien.webcrawler.apec.internal.input;
                  
-public class Sorts
+public class SortsVO
 {
     private String type;
 

@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 "idNomLieu",
 "libelleLieu"
 })
-public class Lieux {
+public class LieuxVO {
 
 @JsonProperty("idNomLieu")
 private int idNomLieu;

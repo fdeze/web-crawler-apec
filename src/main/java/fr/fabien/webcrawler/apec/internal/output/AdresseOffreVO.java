@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "adresseCodePostal", "adresseNumeroEtVoie", "adresseVille", "idPays", "id" })
-public class AdresseOffre {
+public class AdresseOffreVO {
 
 	@JsonProperty("adresseCodePostal")
 	private String adresseCodePostal;

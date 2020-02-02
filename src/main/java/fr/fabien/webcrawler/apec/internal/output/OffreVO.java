@@ -21,12 +21,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 		"offreQualifiee", "prenomInterlocuteur", "salaireTexte", "tempsPartiel", "texteHtml", "typeCandidature",
 		"offreSalon", "latitude", "longitude", "geolocalisable", "texteHtmlProfil", "texteHtmlEntreprise",
 		"idNomCiviliteSuivi", "enseigne", "affichageLogo", "indicateurLm" })
-public class ApecOffer {
+public class OffreVO {
 
 	@JsonProperty("adresseOffre")
-	private AdresseOffre adresseOffre;
+	private AdresseOffreVO adresseOffre;
 	@JsonProperty("audit")
-	private Audit audit;
+	private AuditVO audit;
 	@JsonProperty("comptePersonnelIdNomOrganisation")
 	private int comptePersonnelIdNomOrganisation;
 	@JsonProperty("datePublication")
@@ -66,7 +66,7 @@ public class ApecOffer {
 	@JsonProperty("intitule")
 	private String intitule;
 	@JsonProperty("lieux")
-	private List<Lieux> lieux = new ArrayList();
+	private List<LieuxVO> lieux = new ArrayList();
 	@JsonProperty("legacyLieux")
 	private boolean legacyLieux;
 	@JsonProperty("logoEtablissement")
@@ -117,22 +117,22 @@ public class ApecOffer {
 	private Map<String, Object> additionalProperties = new HashMap();
 
 	@JsonProperty("adresseOffre")
-	public AdresseOffre getAdresseOffre() {
+	public AdresseOffreVO getAdresseOffre() {
 		return adresseOffre;
 	}
 
 	@JsonProperty("adresseOffre")
-	public void setAdresseOffre(AdresseOffre adresseOffre) {
+	public void setAdresseOffre(AdresseOffreVO adresseOffre) {
 		this.adresseOffre = adresseOffre;
 	}
 
 	@JsonProperty("audit")
-	public Audit getAudit() {
+	public AuditVO getAudit() {
 		return audit;
 	}
 
 	@JsonProperty("audit")
-	public void setAudit(Audit audit) {
+	public void setAudit(AuditVO audit) {
 		this.audit = audit;
 	}
 
@@ -327,12 +327,12 @@ public class ApecOffer {
 	}
 
 	@JsonProperty("lieux")
-	public List<Lieux> getLieux() {
+	public List<LieuxVO> getLieux() {
 		return lieux;
 	}
 
 	@JsonProperty("lieux")
-	public void setLieux(List<Lieux> lieux) {
+	public void setLieux(List<LieuxVO> lieux) {
 		this.lieux = lieux;
 	}
 

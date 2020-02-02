@@ -9,10 +9,10 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @EnableFeignClients("fr.fabien.webcrawler")
 @EnableSwagger2
-public class WebCrawlerApplication {
+public class ApecWebCrawlerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(WebCrawlerApplication.class, args);
+		SpringApplication.run(ApecWebCrawlerApplication.class, args);
 	}
 
 }

@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
 "dateModification"
 })
-public class Audit {
+public class AuditVO {
 
 @JsonProperty("dateModification")
 private String dateModification;
